@@ -15,6 +15,11 @@ CACHE_FILENAME = 'cache.json'
 CACHE_DICT = {}
 HEADERS = {'Authorization': 'Bearer ' + API_KEY}
 
+catTree = \
+    ("Do you want to try asian food?",
+        ("Chinese food", None, None),
+        ("Italian food", None, None))
+
 
 def saveCache(cache):
     '''
@@ -267,6 +272,44 @@ def CityResList(yelpDict, chosenCity, cat):
 def showResList(list):
     for item in list:
         item.getPrint()
+
+
+class TreeNode()
+    def __init__(self.data):
+        self.data = data
+        self.children = []
+        self.parent = None
+    
+    def addChild(self, child):
+        child.parent = self
+        self.children.append(child)
+
+
+def buildTree():
+    root = TreeNode("Recommended Restaurants")
+
+    asian = TreeNode("Asian food")
+    asian.addChild(TreeNode("Chinese"))
+    asian.addChild(TreeNode("Korean"))
+
+    euro = TreeNode("European food")
+    euro.addChild(TreeNode("Greek"))
+    euro.addChild(TreeNode("Itatilan"))
+
+    american = TreeNode("American food")
+    american.addChild(TreeNode("New American"))
+    american.addChild(TreeNode("Sandwiches"))
+
+    african = TreeNode("African food")
+
+    arabian = TreeNode("Arabian food")
+
+    other = TreeNode("Other food")
+
+
+
+
+
 
 
 
