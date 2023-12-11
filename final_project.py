@@ -15,10 +15,6 @@ CACHE_FILENAME = 'cache.json'
 CACHE_DICT = {}
 HEADERS = {'Authorization': 'Bearer ' + API_KEY}
 
-catTree = \
-    ("Do you want to try asian food?",
-        ("Chinese food", None, None),
-        ("Italian food", None, None))
 
 
 def saveCache(cache):
@@ -46,7 +42,7 @@ def loadCache():
     Return: dict
     '''
     try:
-        cacheFile = open(CACHE_FILE_NAME, 'r')
+        cacheFile = open(CACHE_FILENAME, 'r')
         content = cacheFile.read()
         cache = json.loads(content)
         cacheFile.close()
@@ -70,9 +66,9 @@ def cityAPI(url, cache):
     '''
 
     if url in (cache.keys()):
-        print("Using cache")
+        print("Using cache (City)")
     else:
-        print("Fetching")
+        print("Fetching (City)")
         response = requests.get(url)
         cache[url] = response.text
         saveCache(cache)
@@ -175,9 +171,9 @@ def yelpAPI(baseurl, params):
     paramsList.sort()
     key = baseurl + connector + connector.join(paramsList)
     if key in CACHE_DICT.keys():
-        print("Using Cache")
+        print("Using Cache (Restaurant)")
     else:
-        print("Fetching")
+        print("Fetching (Restaurant)")
         CACHE_DICT[key] = requests.get(baseurl, params, headers=HEADERS).json()
         saveCache(CACHE_DICT)
 
@@ -252,7 +248,7 @@ def CityResList(yelpDict, chosenCity, cat):
     '''
     cityResList = []
     for cityR in yelpDict["businesses"]:
-        if cityR["categories"][0]["alias"] == cat:
+        if cityR["categories"][0]["title"] == cat:
             name = cityR["name"]
             city = chosenCity
             if "rating" not in cityR:
@@ -270,60 +266,286 @@ def CityResList(yelpDict, chosenCity, cat):
              
 
 def showResList(list):
-    for item in list:
-        item.getPrint()
+    if list:
+        for item in list:
+            item.getPrint()
+    else:
+        print("Sorry, no restaurants found.")
+    
 
+class TreeNode():
+    '''
+    define a tree node to store the inofmration of the kind of restaurant
+    
+    Parameters
+    data = str
+    parent = None
+    children = list
 
-class TreeNode()
-    def __init__(self.data):
+    '''
+    def __init__(self, data, parent = None):
         self.data = data
+        self.parent = parent
         self.children = []
-        self.parent = None
     
     def addChild(self, child):
         child.parent = self
         self.children.append(child)
+    
+    def getData(self):
+        return self.data
+    
+    def getParent(self):
+        return self.parent
+    
+    def getChildren(self):
+        return self.children
+
+    def getLevel(self):
+        level = 0
+        p = self.parent
+        while p:
+            level = level + 1
+            p = p.parent
+        return level
+
+    def printTree(self):
+        space = "   " * self.getLevel()
+        print(space + self.data)
+        if self.children:
+            for child in self.children:
+                child.printTree()
+
+    def toDict(self):
+        result = {
+            "data" : self.data,
+            "children" : [child.toDict() for child in self.children]
+        }
+        return result
+
 
 
 def buildTree():
-    root = TreeNode("Recommended Restaurants")
+    '''
+    Build a tree to store the inofmration of the kind of restaurant.
+    
+    Parameters
+    root = treeNode class
+    
+    return treeNode class
+
+    '''
+    
+    root = TreeNode("Restaurant Categories")
+    
 
     asian = TreeNode("Asian food")
     asian.addChild(TreeNode("Chinese"))
     asian.addChild(TreeNode("Korean"))
+    asian.addChild(TreeNode("Cambodian"))
+    asian.addChild(TreeNode("Asian Fusion"))
+    asian.addChild(TreeNode("Indian"))
+    asian.addChild(TreeNode("Thai"))
+    asian.addChild(TreeNode("Japanese"))
 
     euro = TreeNode("European food")
     euro.addChild(TreeNode("Greek"))
     euro.addChild(TreeNode("Itatilan"))
+    euro.addChild(TreeNode("Portuguese"))
 
     american = TreeNode("American food")
     american.addChild(TreeNode("New American"))
     american.addChild(TreeNode("Sandwiches"))
+    american.addChild(TreeNode("Southern"))
 
     african = TreeNode("African food")
 
     arabian = TreeNode("Arabian food")
 
     other = TreeNode("Other food")
+    other.addChild(TreeNode("Pubs"))
+    other.addChild(TreeNode("Bars"))
+    other.addChild(TreeNode("Comfort Food"))
+    
+    root.addChild(asian)
+    root.addChild(euro)
+    root.addChild(american)
+    root.addChild(african)
+    root.addChild(arabian)
+    root.addChild(other)
+    
+    
+    return root
+
+
+def loadTree(cache):
+    '''
+    Check whether tree is in the cache. If so, load the tree. If not build a tree.
+
+    Parameters
+    tree: str
+    cache: dict
+
+    return: str
+    '''
+    tree = "tree"
+    if tree in (cache.keys()):
+        print("Using cache (Tree)")
+        #return cache(tree)
+    else:
+        print("Build the tree")
+        treeRes = buildTree().toDict()
+        cache[tree] = treeRes
+        print(cache)
+        with open(CACHE_FILENAME, 'w') as json_file:
+            json.dump(cache, json_file, default=lambda o: o.toDict(), indent=4)
+       
+    return cache[tree]
+
+def dictToTree(treeDict):
+    '''
+    convert tree dictionary to treeNode
+    
+    Parameters
+    treeDict: dict
+    root: TreeNode
+    
+    return TreeNode
+    '''
+    root = TreeNode(treeDict["data"])
+    for child in treeDict.get("children", []):
+        childNode = dictToTree(child)
+        childNode.parent = root
+        root.addChild(childNode)
+        
+    return root
 
 
 
-
-
-
+def chooseCity(num):
+    '''
+    After the user choose a city number, return the city name
+    
+    Parameters
+    num = int
+    
+    return str
+    
+    '''
+    if num == 1:
+        return "New York City"
+    if num == 2:
+        return "Miami"
+    if num == 3:
+        return "Orlando"
+    if num == 4:
+        return "Los Angeles"
+    if num == 5:
+        return "San Francisco"
+    if num == 6:
+        return "Las Vegas"
+    if num == 7:
+        return "Washington D.C."
+    if num == 8:
+        return "Chicago"
+    if num == 9:
+        return "Boston"
+    if num == 10:
+        return "Honolulu"
 
 
 
 if __name__ == "__main__":
     
+    print("Welcome to the city restaurants program!")
+    print("The cities shown below are the most visited citties in US.")
+    print("------------------------------------------------------------")
+    inner = True
+    inner2 = True
+    outter = True
     #get the city information
     CACHE_DICT = loadCache()
     cityList = cityList()
-    showCityList(cityList)
+    tree = loadTree(CACHE_DICT)
+    root = dictToTree(tree)
+    
+    while outter is True:
+        inner = True
+        showCityList(cityList)
+        try:
+            print("------------------------------------------------------------")
+            cityNum = float(input("Please choose a city you would like to go: (Please input the integer between 1 and 10.)"))
+            if cityNum.is_integer() and cityNum > 0 and cityNum < 11:         
+                #list the categories and ask user to choose
+                city = chooseCity(cityNum)
+                print("Please choose a category!")
+                print("***********************************")
+                root.printTree()
+                print("***********************************")
+                cate = input("Please choose a category you are interested: (e.g. Chinese)")
+                print(f"restaurant of {cate} category in {city}")
+                print("------------------------------------------------------------")
+                #get the restaurant information for the choosen city
+                cityResL = CityResList(YelpCity(city),city, cate)
+                showResList(cityResL)
+                print("------------------------------------------------------------")
+                choose = input("Please make your choose: 1. Choose another city. 2. Choose another category. 3. The category is not listed. 4. Exit")
+                if choose == "1":
+                    continue
+                elif choose == "2":
+                    inner = True
+                    while inner == True:
+                        cateAgain = input("Please choose a category you are interested: (e.g. Chinese)")
+                        print(f"restaurant of {cateAgain} category in {city}")
+                        print("------------------------------------------------------------")
+                        #get the restaurant information for the choosen city
+                        cityResL = CityResList(YelpCity(city),city, cateAgain)
+                        showResList(cityResL)
+                        print("------------------------------------------------------------")
+                        play = input("Please make your choose: 1. Choose another city. 2. Choose another category. 3. Exit")
+                        if play == "1":
+                            inner = False
+                        elif play == "2":
+                            pass
+                        elif play == "3":
+                            inner = False
+                            outter = False
+                        else:
+                            print("Wrong input. Back to beginning")
+                            break
+                    #continue
+                elif choose == "3":
+                    inner2 = True
+                    while inner2 == True:
+                        otherCate = input("Please input a category you are interested: (e.g. Chinese)")
+                        print(f"restaurant of {otherCate} category in {city}")
+                        print("------------------------------------------------------------")
+                        #get the restaurant information for the choosen city
+                        cityResL = CityResList(YelpCity(city),city, otherCate)
+                        showResList(cityResL)
+                        print("------------------------------------------------------------")
+                        play = input("Please make your choose: 1. Choose another city. 2. Choose another category. 3. Exit")
+                        if play == "1":
+                            inner2 = False
+                        elif play == "2":
+                            pass
+                        elif play == "3":
+                            inner2 = False
+                            outter = False
+                        else:
+                            print("Wrong input!")
+                            pass
+                elif choose == "4":
+                    break
+                else:
+                    print("Wrong input. Back to beginning")
+                    continue
+            else:
+                print("*****Wrong input! Please enter a integer between 1 - 10!*****")
+                continue
+        except: 
+            print("*****Wrong input! Please enter agian!*****")
+            pass
+    
 
-    #get the restaurant information for cities
-    #city = input("Please choose the city you want to go:")
-    cityRestaurant = YelpCity("Miami")
-    b = CityResList(cityRestaurant,"Miami", "bars")
-    print(type(b))
-    showResList(b)
+    
